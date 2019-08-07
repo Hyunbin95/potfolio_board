@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="user">
+	<select id="emailcheck" parameterType="java.lang.String"
+		resultType="java.lang.String">
+		select email
+		from user_personal
+		where trim(email) = #{email}
+
+	</select>
+
+	<select id="nicknamecheck" parameterType="java.lang.String"
+		resultType="java.lang.String">
+		select nickname
+		from user_personal
+		where nickname =
+		#{nickname}
+	</select>
+
+	<!-- 회원가입 #안에 작성하는 것은 VO 클래스의 프로퍼티(setter)이름 -->
+	<insert id="register" parameterType="User">
+		insert into user_personal(email, pw, nickname, image) values(#{email},
+		#{pw}, #{nickname}, #{image})
+
+	</insert>
+
+	<select id="login" parameterType="java.lang.String"
+		resultType="User">
+		select email, pw, nickname, image
+		from user_personal
+		where trim(email) = #{email}
+	</select>
+
+</mapper>

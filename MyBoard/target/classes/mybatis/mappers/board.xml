@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board">
+
+	<!-- 게시글 작성을 위한 SQL -->
+	<insert id="register" parameterType="Board">
+		insert into user_board(bno,
+		title, content, ip, email)
+		values(boardseq.nextval, #{title},
+		#{content}, #{ip}, #{email})
+	</insert>
+
+	<!-- 목록보기를 보여주는 SQL -->
+	<!-- <select id="list" resultType="Board"> select bno, title, readcnt, regdate, 
+		nickname, b.email, image from user_board b, user_personal u where u.email 
+		= b.email order by updatedate desc </select> -->
+
+	<!-- 게시글 목록보기 - 페이지 처리 추가 updateDate 별로 내림차순 정렬해서 Criteria 가 pageStart 부터 
+		pageStart + perPageNum - 1 번째 데이터 까지만 가져오기 -->
+	<select id="list" resultType="Board" parameterType="SearchCriteria">
+		select bno,title, email, nickname, regdate, readcnt, image
+		from (select rownum
+		rnum,bno,title,email,nickname,regdate, image,readcnt
+		from(select
+		bno,title, b.email,nickname,regdate, readcnt, image
+		from user_board b, user_personal u
+		<include refid="search"></include> order by updatedate desc))
+		where rnum &gt;= #{pageStart} and rnum &lt; = #{pageStart} +
+		#{perPageNum} -1
+	</select>
+
+	<!-- 글 번호에 해당하는 데이터의 조회수를 1 증가시키는 SQL -->
+	<update id="updatereadcnt" parameterType="java.lang.Integer">
+		update user_board
+		set
+		readcnt = readcnt + 1
+		where bno = #{bno}
+	</update>
+
+	<!-- 글번호에 해당하는 데이터를 전부 가져오는 SQL -->
+	<select id="getdata" parameterType="java.lang.Integer"
+		resultType="Board">
+		select bno, title, content, readcnt, regdate, updatedate,
+		ip, u.email,nickname
+		from user_board b, user_personal u
+		where u.email = b.email and bno=#{bno}
+	</select>
+
+	<!-- update를 수행해주는 SQL -->
+	<update id="update" parameterType="Board">
+		update user_board
+		set
+		title=#{title}, content=#{content}, updatedate = sysdate
+		where
+		bno=#{bno}
+	</update>
+
+	<delete id="delete" parameterType="java.lang.Integer">
+		delete from user_board
+		where
+		bno = #{bno}
+	</delete>
+
+	<!-- 전체 데이터 개수를 가져오는 SQL where 절이 없으면 parameter도 필요가 없습니다. -->
+	<select id="totalcount" resultType="java.lang.Integer"
+	parameterType="SearchCriteria">
+		select count(*)
+		from user_board b, user_personal u
+		<!-- include는 가져와서 쓰는 것  -->
+		<include refid = "search"></include>
+	</select>
+
+	<!-- 동작 SQL : 다른 SQL에 포함시켜서 사용 -->
+	<sql id="search">
+		<if test="searchType != null">
+			<if test="searchType == 'n'.toString()">
+				where b.email = u.email
+			</if>
+			<!-- title에 keyword가 포함된 -->
+			<if test="searchType == 't'.toString()">
+				where b.email = u.email and
+				title like '%' || #{keyword} || '%'
+			</if>
+			<!-- content에 keyword가 포함된 -->
+			<if test="searchType == 'c'.toString()">
+				where b.email = u.email and
+				content like '%' || #{keyword} || '%'
+			</if>
+			<!-- nickname에 keyword가 포함된 -->
+			<if test="searchType == 'w'.toString()">
+				where b.email = u.email and
+				nickname like '%' || #{keyword} || '%'
+			</if>
+			<!--title 또는 content에 keyword가 포함된 -->
+			<if test="searchType == 'tc'.toString()">
+				where b.email = u.email and(
+				title like '%' || #{keyword} || '%' or
+				content like '%' || #{keyword} || '%')
+			</if>
+		</if>
+		<if test="searchType==null">
+			where b.email = u.email
+		</if>
+	</sql>
+	
+	<select id="replycnt" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+		select count(*)
+		from user_reply
+		where bno = #{bno}
+	</select>
+
+</mapper>
